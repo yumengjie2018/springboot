@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: config
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/yumengjie2018/spring-config/blob/master/config.yml
+          username: yumengjie2018
+          password: 2018yumengjie
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8891/eureka/
+
