@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: getway
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        service-id: CONFIG
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8891/eureka/

@@ -1,0 +1,9 @@
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8891/eureka/
+spring:
+  application:
+    name: clint
+server:
+  port: 8892

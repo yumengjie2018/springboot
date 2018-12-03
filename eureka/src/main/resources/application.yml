@@ -1,0 +1,14 @@
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8891/eureka/
+    #隐藏注册中心自己注册自己身上
+    register-with-eureka: false
+  server:
+  #开发环境可以关闭，生产环境不行
+    enable-self-preservation: false
+spring:
+  application:
+    name: eureka
+server:
+  port: 8891
