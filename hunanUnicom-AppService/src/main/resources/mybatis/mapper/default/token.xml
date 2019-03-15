@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.boco.hnappservice.mapper.TokenDao">
+	<!-- 更新token数据，已有则更新，没有则插入 -->
+	<update id="saveToken" parameterType="com.boco.hnappservice.entity.domainModel.TokenEntity">
+		merge into tco_user_token
+		t1
+		using (select '${userId}' user_id,'${token}' token from 
+		dual) t2
+		on
+		(t1.user_id = t2.user_id)
+		when matched then
+		update set t1.token =
+		t2.token
+		when not matched then
+		insert values (t2.user_id, t2.token)
+	</update>
+
+	<select id="getToken" parameterType="String" resultType="String">
+		select token from  tco_user_token where user_id= #{userId}
+	</select>
+</mapper>

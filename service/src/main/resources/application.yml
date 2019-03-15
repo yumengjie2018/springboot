@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: testservie
+  datasource:
+      driver-class-name: oracle.jdbc.driver.OracleDriver
+      url: jdbc:oracle:thin:@//10.10.2.31:1521/orcl
+      username: osmp_ah
+      password: osmp_ah
+#    driver-class-name: oracle.jdbc.driver.OracleDriver
+#    url: jdbc:oracle:thin:@10.132.52.154:1521:wytymh
+#    username: wyniosdb
+#    password: Sxwy12cdb
+  jpa:
+    hibernate:
+          ddl-auto: update #自动更新
+    show-sql: true  #日志中显示sql语句
+debug: true
+
+server:
+  port: 9988
+#eureka:
+#  client:
+#    service-url:
+#      defaultZone: http://localhost:8891/eureka/
+#  instance:
+#      instance-id: ${spring.cloud.client.ipAddress}:${spring.application.name}:${server.port}
+#      prefer-ip-address: true
+#XML文件位置
+mybatis:
+  mapperLocations: classpath:mybatis/mapper/default/*.xml
+  type-aliases-package: com.example.service.entity.response
+
+
+#Swagger开关
+swaggerEnable: true
+
+
+camel:
+  springboot:
+    main-run-controller: true #监听Ftp服务器的时候，为了让java进程在后台运行
+ftp:
+  wifi-info:
+    url: 127.0.0.1
+    username: test
+    password: 123456
+    dir: /wifi_info
+    server-info: ftp://${ftp.wifi-info.url}:21${ftp.wifi-info.dir}?username=${ftp.wifi-info.username}&password=${ftp.wifi-info.password}&delay=2s&readLock=rename&include=.*zip&filter=#wifiDownloadFileFilter
+    local-save-dir: E:/ftpdata/mac/save
+    unzip-temp-dir: E:/ftpdata/mac/temp
+    local-files-prefix: /localFilesList-  #已下载文件列表的前缀
+    local-files-suffix: .txt   #已下载文件列表的后缀
