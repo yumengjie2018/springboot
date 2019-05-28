@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.boco.hnappservice.mapper.LoginMapper">
+
+    <select id="getUser"  resultMap="getUserInfo">
+        SELECT
+        a.GROUP_NAME groupName,
+        c.user_id userId,
+        c.user_name userName,
+        c.password,
+        c.display_name displayName,
+        c.isLocked,
+        c.failed_login_count failedLoginCount,
+        c.create_time createTime,
+        -- 		c.user_mail	userMail,
+        -- 		c.user_phone userPhone,
+        c.user_description userDescription,
+        c.district_name distinctName,
+        c.department_name departmentName,
+        c.department_id departmentId,
+        c.create_user_id createUserId,
+        c.city_id cityId,
+        c.region_id regionId,
+        d.FILE_PATH userAvatar,
+        CASE e.PROJECT_MANAGE_ROLE
+        WHEN 'REGION_PM' THEN 0
+        ELSE 1
+        END userAuthority,
+        f.file_path faceIdUrl
+        FROM tco_user_v2 c
+        left JOIN TCO_USER_GROUPS b on b.USER_ID = c.USER_ID
+        LEFT JOIN tco_groups a on a.group_id = b.GROUP_ID
+        LEFT JOIN TCO_USER_AVATAR d on d.USER_ID = c.USER_ID
+        LEFT JOIN os_pr_person_cfg e ON e.USER_ID = c.USER_ID
+        LEFT JOIN TCO_USER_FACEID f on f.user_id = c.user_id
+        WHERE b.GROUP_ID='7b6f7a37-08e9-4493-8204-965a23a71274'
+        AND c.USER_NAME=#{name}
+    </select>
+    <!-- 获取用户信息 -->
+    <resultMap type="com.boco.hnappservice.entity.domainModel.UserEntity" id="getUserInfo">
+        <result property="password" column="password"/>
+        <result property="isLocked" column="isLocked"/>
+        <result property="failedLoginCount" column="failedLoginCount"/>
+        <association property="entity"
+                     javaType="com.boco.hnappservice.entity.response.UserResponseEntity">
+            <result property="userId" column="userId"/>
+            <result property="userName" column="userName"/>
+            <result property="displayName" column="displayName"/>
+            <result property="groupName" column="groupName"/>
+            <result property="companyName" column="companyName"/>
+            <result property="userAvatar" column="userAvatar"/>
+            <result property="userAuthority" column="userAuthority"/>
+            <result property="faceIdUrl" column="faceIdUrl"/>
+        </association>
+    </resultMap>
+
+</mapper>
