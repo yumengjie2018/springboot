@@ -1,0 +1,24 @@
+server:
+  port: 9888
+spring:
+  application:
+    name: xjAppService
+  datasource:
+        driver-class-name: oracle.jdbc.driver.OracleDriver
+        url: jdbc:oracle:thin:@//10.10.2.31:1521/orcl
+        username: osmp_ah
+        password: osmp_ah
+
+  servlet:
+        multipart:
+          max-file-size: 30MB
+          max-request-size: 30MB
+
+#XML路径配置
+mybatis:
+  mapperLocations: classpath:mybatis/mapper/default/*.xml
+  type-aliases-package: com.boco.xjappservice.entity
+  configuration:
+        log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+#Swagger开关
+swaggerEnable: true
