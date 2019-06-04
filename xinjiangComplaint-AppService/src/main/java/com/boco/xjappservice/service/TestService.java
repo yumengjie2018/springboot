@@ -1,6 +1,9 @@
 package com.boco.xjappservice.service;
 
+import com.boco.xjappservice.handle.MyException;
+import io.swagger.models.auth.In;
+
 public interface TestService {
-    int getTestOracle();
+    Integer getTestOracle(String userId);
 
 }

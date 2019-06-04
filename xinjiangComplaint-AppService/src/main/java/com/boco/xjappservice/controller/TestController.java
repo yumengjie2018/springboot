@@ -1,5 +1,8 @@
 package com.boco.xjappservice.controller;
 
+import com.boco.xjappservice.entity.response.ResponseMessage2;
+import com.boco.xjappservice.entity.response.ResponseStatus;
+import com.boco.xjappservice.handle.MyException;
 import com.boco.xjappservice.service.TestService;
 import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,10 +24,12 @@ public class TestController {
     @Autowired
     private TestService service;
     @GetMapping("/testOracle")
-    public int testOracle(String userId){
+    public ResponseMessage2<Integer> testOracle(String userId){
 
         System.out.println("000000");
-        return service.getTestOracle();
+        Integer ll=service.getTestOracle(userId);
+
+        return ResponseMessage2.Success2(ll);
     }
 
 }

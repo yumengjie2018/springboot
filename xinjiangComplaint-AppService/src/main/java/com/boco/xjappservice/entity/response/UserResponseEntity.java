@@ -47,4 +47,5 @@ public class UserResponseEntity implements Serializable {
     private String timeSpan;
     @ApiModelProperty("redis记录用户登陆次数")
     private String num="";
+
 }
