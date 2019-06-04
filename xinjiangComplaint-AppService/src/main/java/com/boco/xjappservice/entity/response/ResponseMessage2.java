@@ -102,4 +102,12 @@ import java.io.Serializable;
             return new ResponseMessage2(status, message, data);
         }
 
-}
+        @Override
+        public String toString() {
+            return "ResponseMessage2{" +
+                    "status=" + status +
+                    ", message='" + message + '\'' +
+                    ", data=" + data +
+                    '}';
+        }
+    }

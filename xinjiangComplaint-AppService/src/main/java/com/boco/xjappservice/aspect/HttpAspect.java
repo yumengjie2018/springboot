@@ -1,5 +1,6 @@
 package com.boco.xjappservice.aspect;
 
+import com.boco.xjappservice.entity.response.ResponseMessage2;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.*;
@@ -40,11 +41,11 @@ public class HttpAspect {
         log.info("args={}",joinPoint.getArgs());
     }
     @After("log()")
-    public void soAfter(){
+    public void doAfter(){
     }
     @AfterReturning(returning = "object",pointcut = "log()")
     public void doAfterReturning(Object object){
-        log.info("response={}",object.toString());
+        log.info("response={}", ResponseMessage2.Success2(object.toString()));
     }
     //后置异常通知
     @AfterThrowing(value = "log()",throwing = "e")
