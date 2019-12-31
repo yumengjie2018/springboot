@@ -1,7 +1,7 @@
 package com.example.service.service.impl;
 
 import com.example.service.entity.response.BookResponse;
-import com.example.service.repository.BookJpaRespository;
+import com.example.service.mapper.BookJpaRespository;
 import com.example.service.service.BookJpaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

@@ -1,18 +1,24 @@
 package com.example.service.TestLambda;
 
 import com.example.service.domainModel.Complex;
+import com.example.service.service.IntefaceA;
 import com.sun.org.apache.bcel.internal.generic.NEW;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.access.method.P;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Vector;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -31,16 +37,53 @@ public final class TestLambda1 {
     @Test
     public  void test1(){
 
-        List<String> list= new ArrayList<String>();
-        list.add("张三");
-        list.add("李四");
-        list.add("王五");
-        list.add("马六");
-        System.out.println(list.get(0));
+//        List<String> list= new ArrayList<String>();
+//        list.add("张三");
+//        list.add("李四");
+//        list.add("王五");
+//        list.add("马六");
+//        System.out.println(list.get(0));
+//
+//        list.forEach(li-> System.out.println(li+"干什么"));
+////        Runnable no=() -> System.out.println("hello");
+//
+//        Complex complex=new Complex(2,3);
+//
+//       Complex c=new Complex(5,3);
+//       Complex  cc=c.plus(complex);
+//        System.out.println(cc.toString()+"11111111111111111111");
+        List<String> data = new ArrayList<>();
+        data.add("张三");
+        data.add("李四");
+        data.add("王三");
+        data.add("马六");
+                        data.parallelStream().forEach(x-> System.out.println(x));
+        System.out.println("--------------------");
+        data.stream().forEach(System.out::println);
+        System.out.println("+++++++++++++++++");
+        List<String> kk=data.stream().sorted().limit(2).collect(Collectors.toList());
+        kk.forEach(System.out::println);
+        List<String> ll=data.stream()
+                .filter(x -> x.length() == 2)
+                .map(x -> x.replace("三","五"))
+                .sorted()
+                .filter(x -> x.contains("五")).collect(Collectors.toList());
+        ll.forEach(string-> System.out.println(string));
+        for (String string:ll) {
+            System.out.println(string);
+        }
+        ll.stream().sorted().forEach(s -> System.out.println(s));
+//                .forEach(System.out::println);
+      Thread thread=new Thread(()->{ System.out.println(1); });
+      thread.start();
 
-        list.forEach(li-> System.out.println(li+"干什么"));
-//        Runnable no=() -> System.out.println("hello");
+        LocalDateTime   currentTime=LocalDateTime.now();
 
+        System.out.println("当前时间"+currentTime);
+        LocalDate localDate=currentTime.toLocalDate();
+        System.out.println("当前日期"+localDate);
+
+        Thread tt=new Thread(()-> System.out.println("111"));
     }
     @Test
     public  void test2(){
@@ -60,7 +103,22 @@ public final class TestLambda1 {
         }
 
     }
+    @Test
+    public void test3(){
 
+        Integer[] testint = {1,2,3,4};
+        Optional<Integer> sumAll=Stream.of(testint).reduce(Integer::sum);
+        System.out.println(sumAll.filter(x->x>7));
+    }
+
+    @Test
+    public void reduceTest() {
+        String testS[]={"hello"," ","world"," ","!"};
+        Optional<String> sumAll = Stream.of(testS).reduce(String::concat);
+        System.out.println(sumAll.flatMap(x-> Optional.ofNullable(null)));//Optional.empty
+        System.out.println(sumAll.flatMap(x-> Optional.of(x.toUpperCase())));//Optional[HELLO WORLD !]
+        System.out.println(sumAll.get());
+    }
     public static void main(String[] args) {
         Vector v =new Vector(3,2);
         System.out.println(v.size()+","+v.capacity());
@@ -97,4 +155,9 @@ public final class TestLambda1 {
         System.out.println();
     }
 
+    public static void main1(String[] args) {
+        Path dictionary= Paths.get(args[0]);
+        int minGroupSize = Integer.parseInt(args[1]);
+        "Hello world!".chars().forEach(System.out::println);
+    }
 }
