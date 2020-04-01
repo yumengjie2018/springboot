@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.boco.jlappservice.mapper.UploadMapper">
+    <insert id="insertLogFiles" parameterType="HashMap">
+        insert into tco_user_log(user_id,file_path,insert_time,file_name)
+         values(#{userId},#{filePath},to_date(#{insertTime},'yyyy-mm-dd hh24:mi:ss'),#{fileName})
+    </insert>
+    <delete id="deleteLog" parameterType="com.boco.jlappservice.entity.request.DeleteLogRequest">
+        delete from tco_user_log where insert_time=to_date(#{insertTime},'yyyy-mm-dd hh24:mi:ss') and user_id=#{userId}
+    </delete>
+    <select id="getLog" parameterType="String" resultType="com.boco.jlappservice.entity.response.LogResponse">
+        select to_char(insert_time,'yyyy-mm-dd hh24:mi:ss') insertTime ,file_name fileName,file_path filePath
+        from tco_user_log where user_id=#{userId}
+    </select>
+    <insert id="uploadFtpSpeed" parameterType="com.boco.jlappservice.entity.request.UploadFtpSpeedRequest">
+        insert into tap_app_ftp(user_id,scan_start_time,download_speed_peak,download_speed_mean,upload_speed_peak,upload_speed_mean)
+        values (#{userId},to_date(#{scanStartTime},'yyyy-mm-dd hh24:mi:ss'),
+        #{downloadSpeedPeak},#{downloadSpeedMean},#{uploadSpeedPeak},#{uploadSpeedMean})
+    </insert>
+    <select id="getFtpSpeed" parameterType="String" resultType="com.boco.jlappservice.entity.response.FtpSpeedResponse">
+        select scanStartTime scanStartTime,download_speed_peak downloadSpeedPeak,
+        download_speed_mean downloadSpeedMean,upload_speed_peak uploadSpeedPeak,upload_speed_mean uploadSpeedMean
+        from (
+        select  to_char(scan_start_time,'yyyy-mm-dd hh24:mi:ss') scanStartTime,download_speed_peak,download_speed_mean,upload_speed_peak,upload_speed_mean
+        from tap_app_ftp where user_id= #{userId} order by scan_start_time desc ) where rownum  &lt;= 30
+    </select>
+</mapper>

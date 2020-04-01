@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.boco.jlappservice.mapper.LoginMapper">
+
+    <select id="getUser"  resultMap="getUserInfo">
+        select
+  a.ISLOCKED isLocked,
+  a.USER_NAME userName ,
+  a.USER_ID userId,
+  a.DISPLAY_NAME displayName,
+  a.USER_MAIL userMail,
+  a.USER_PHONE userPhone,
+  a.DEPARTMENT_NAME groupName,
+  a.PASSWORD password,
+  e.region_name city,
+  b.role_name roleName,
+  CASE WHEN 'SYSTEM' in (select b.ROLE_TYPE
+                         from TCO_USER_V2 a ,TCO_ROLES b ,TCO_USER_ROLES c
+                         where c.USER_ID = a.USER_ID and c.ROLE_ID = b.ROLE_ID
+                               AND a.USER_NAME = #{name} ) then '0'
+  ELSE  '1' end
+  userType
+from TCO_USER_V2 a ,
+TCO_ROLES b ,TCO_USER_ROLES c,REGION_CITY e
+where  c.USER_ID = a.USER_ID and c.ROLE_ID = b.ROLE_ID
+and a.USER_NAME = #{name} and a.region_id = e.region_id
+    </select>
+    <!-- 获取用户信息 -->
+    <resultMap type="com.boco.jlappservice.entity.domainModel.UserEntity" id="getUserInfo">
+        <result property="password" column="password"></result>
+        <result property="isLocked" column="isLocked"></result>
+        <association property="entity"
+                     javaType="com.boco.jlappservice.entity.response.UserResponseEntity">
+            <result property="userId" column="userId"></result>
+            <result property="userName" column="userName"></result>
+            <result property="displayName" column="displayName"></result>
+            <result property="userMail" column="userMail"></result>
+            <result property="userPhone" column="userPhone"></result>
+            <result property="groupName" column="groupName"></result>
+            <result property="userAvatar" column="userAvatar"></result>
+            <result property="city" column="city"></result>
+            <result property="roleName" column="roleName"></result>
+        </association>
+    </resultMap>
+</mapper>

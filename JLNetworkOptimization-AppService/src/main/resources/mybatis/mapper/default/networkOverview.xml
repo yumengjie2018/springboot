@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.boco.jlappservice.mapper.NetworkOverviewMapper">
+
+    <select id="getLteNetworkOverview" parameterType="com.boco.jlappservice.entity.request.NetworkOverviewRequest"
+    resultType="com.boco.jlappservice.entity.response.NetworkOverviewResponse">
+       --LTE基站数
+        select c.regionName,c.siteNbr,d.cellNbr,
+        f.C3 wirelessConnectivity ,
+        f.C4 wirelessConnectivityQCI,
+        f.C5 wirelessDropRate,
+        f.C6 erabDropRate,
+        f.C7 erabDropRateQCI,
+        f.C8 switchingSuccessRate,
+        f.C9 esrvccSwitchingSuccessRate,
+        f.C10 upPrbUtilization,
+        f.C11 downPrbUtilization,
+        f.C12 volteUpPacketLossRate,
+        f.C13 volteDownPacketLossRate,
+        f.C14 volteVoiceCallVolume,
+        f.C15 flow,
+        f.C16 mrCoverage
+        from (
+        SELECT  b.region_name regionName, COUNT(b.region_name) siteNbr
+        FROM tcc_enodeb a,region_city b
+        WHERE a.SCAN_START_TIME =to_date('2020-03-19 00:00:00','yyyy-mm-dd hh24:mi:ss')
+        AND a.city_id=b.city_id GROUP BY b.region_name,b.PCODE ORDER BY b.PCODE) c,
+        (SELECT b.region_name regionName, COUNT(*) cellNbr
+        FROM tcc_eutrancell a, region_city b
+        WHERE a.SCAN_START_TIME =to_date('2020-03-19 00:00:00','yyyy-mm-dd hh24:mi:ss')
+        AND a.city_id=b.city_id GROUP BY b.region_name,b.PCODE ORDER BY b.PCODE) d,
+        ( SELECT
+            '吉林省'                      AS regionName,
+            ROUND(DECODE(b.NBRATTESTAB,0,0,b.NBRSUCCESTAB/    b.NBRATTESTAB)*DECODE(b.ATTCONNESTAB,0,0,    b.SUCCCONNESTAB/b.ATTCONNESTAB),6) AS C3,  --无线接通率
+            ROUND(DECODE(b.NBRATTESTAB_1,0,0,b.NBRSUCCESTAB_1/    b.NBRATTESTAB_1)*DECODE(b.ATTCONNESTAB,0,0,    b.SUCCCONNESTAB/b.ATTCONNESTAB),6) AS C4,  --无线接通率QCI=1
+            ROUND(DECODE(b.SUCCINITALSETUP+NVL(b.NBRLEFT_CONTEXT,0),0,0,    (b.ATTRELENB-b.ATTRELENBNORMAL)/    (b.SUCCINITALSETUP+NVL(b.NBRLEFT_CONTEXT,0))),6) AS C5,  --无线掉线率
+            ROUND(DECODE(b.NBRLEFT+b.NBRSUCCESTAB+    b.NBRHOINC,0,0,((b.NBRREQRELENB-    b.NBRREQRELENB_NORMAL)+b.HOFAIL)/(b.NBRLEFT+    b.NBRSUCCESTAB+b.NBRHOINC)),6) AS C6,  --E-RAB掉线率（小区级）
+            ROUND(DECODE(b.NBRLEFT_1+b.NBRSUCCESTAB_1+    b.NBRHOINC_1,0,0,((b.NBRREQRELENB_1-    b.NBRREQRELENB_NORMAL_1)+b.HOFAIL_1)/    (b.NBRLEFT_1+b.NBRSUCCESTAB_1+b.NBRHOINC_1))    ,6) AS C7,  --E-RAB掉线率(QCI=1)(小区级)
+            ROUND(DECODE(b.ATTOUTINTERENBS1+b.ATTOUTINTERENBX2+    b.ATTOUTINTRAENB,0,0,(b.SUCCOUTINTERENBS1+    b.SUCCOUTINTERENBX2+b.SUCCOUTINTRAENB)/    (b.ATTOUTINTERENBS1+b.ATTOUTINTERENBX2+    b.ATTOUTINTRAENB)),6) AS C8,  --切换成功率
+            ROUND(ROUND(DECODE(b.ATTOUTGERAN,0,0,b.SUCCOUTGERAN/    b.ATTOUTGERAN),4),6)    AS C9,  --eSRVCC无线切换成功率
+            ROUND(ROUND(DECODE(b.PUSCHPRBTOT,0,0,b.PUSCHPRBASSN/    b.PUSCHPRBTOT),4),6)    AS C10,   --上行PRB利用率
+            ROUND(ROUND(DECODE(b.PDSCHPRBTOT,0,0,b.PDSCHPRBASSN/    b.PDSCHPRBTOT),4),6)    AS C11,  --下行PRB利用率
+            ROUND(DECODE(b.NBRPKTUL_1,0,0,b.NBRPKTLOSSUL_1/    b.NBRPKTUL_1)*1000000,6) AS C12,  --VoLTE上行丢包率
+            ROUND(DECODE(b.NBRPKTDL_1,0,0,b.NBRPKTLOSSDL_1/    b.NBRPKTDL_1)*1000000,6)       AS C13,  --VoLTE下行丢包率
+            ROUND(b.VOLTE_VOICE_TRAFFIC/10000,6) AS C14,  --VOLTE语音话务量(万Erl)
+            ROUND(b.UpOct/1000000000,6)        AS C15,  --数据流量TB
+            ROUND(DECODE(c.RSRP_COUNT,0,0,(c.RSRP_00+c.RSRP_01+c.RSRP_02+c.RSRP_03+c.RSRP_04+c.RSRP_05+c.RSRP_06)/c.RSRP_COUNT),6)  as C16   --MR覆盖率    AS C15,
+        FROM
+            REGION_CITY a,
+            TPA_EUTRANCELL_SUM b,
+            TLA_RSRP_SUM  c
+        WHERE
+         b.SCAN_START_TIME =to_date('2020-03-19 00:00:00','yyyy-mm-dd hh24:mi:ss')
+        AND c.SCAN_START_TIME =b.SCAN_START_TIME
+        AND b.SUM_LEVEL = 1
+        AND c.SUM_LEVEL = 1
+        AND b.NE_TYPE = 10000
+        AND c.NE_TYPE = 10000
+        AND a.city_id=1821817893
+        AND a.CITY_ID = b.INT_ID
+        AND a.CITY_ID = c.INT_ID
+        union all
+        select * from (
+        SELECT
+            a.CITY_NAME regionName,
+            ROUND(DECODE(b.NBRATTESTAB,0,0,b.NBRSUCCESTAB/b.NBRATTESTAB)*DECODE(b.ATTCONNESTAB,0,0,b.SUCCCONNESTAB/b.ATTCONNESTAB),6) AS C3,  --无线接通率
+            ROUND(DECODE(b.NBRATTESTAB_1,0,0,b.NBRSUCCESTAB_1/b.NBRATTESTAB_1)*DECODE(b.ATTCONNESTAB,0,0,b.SUCCCONNESTAB/b.ATTCONNESTAB),6) AS C4,  --无线接通率QCI=1
+            ROUND(DECODE(b.SUCCINITALSETUP+NVL(b.NBRLEFT_CONTEXT,0),0,0,(b.ATTRELENB-b.ATTRELENBNORMAL)/(b.SUCCINITALSETUP+NVL(b.NBRLEFT_CONTEXT,0))),6) AS C5,  --无线掉线率
+            ROUND(DECODE(b.NBRLEFT+b.NBRSUCCESTAB+b.NBRHOINC,0,0,((b.NBRREQRELENB-b.NBRREQRELENB_NORMAL)+b.HOFAIL)/(b.NBRLEFT+b.NBRSUCCESTAB+b.NBRHOINC)),6) AS C6,  --E-RAB掉线率（小区级）
+            ROUND(DECODE(b.NBRLEFT_1+b.NBRSUCCESTAB_1+b.NBRHOINC_1,0,0,((b.NBRREQRELENB_1-b.NBRREQRELENB_NORMAL_1)+b.HOFAIL_1)/(b.NBRLEFT_1+b.NBRSUCCESTAB_1+b.NBRHOINC_1)),6) AS C7,  --E-RAB掉线率(QCI=1)(小区级)
+            ROUND(DECODE(b.ATTOUTINTERENBS1+b.ATTOUTINTERENBX2+b.ATTOUTINTRAENB,0,0,(b.SUCCOUTINTERENBS1+    b.SUCCOUTINTERENBX2+b.SUCCOUTINTRAENB)/(b.ATTOUTINTERENBS1+b.ATTOUTINTERENBX2+b.ATTOUTINTRAENB)),6) AS C8,  --切换成功率
+            ROUND(ROUND(DECODE(b.ATTOUTGERAN,0,0,b.SUCCOUTGERAN/b.ATTOUTGERAN),4),6)    AS C9,  --eSRVCC无线切换成功率
+            ROUND(ROUND(DECODE(b.PUSCHPRBTOT,0,0,b.PUSCHPRBASSN/b.PUSCHPRBTOT),4),6)    AS C10,   --上行PRB利用率
+            ROUND(ROUND(DECODE(b.PDSCHPRBTOT,0,0,b.PDSCHPRBASSN/b.PDSCHPRBTOT),4),6)    AS C11,  --下行PRB利用率
+            ROUND(DECODE(b.NBRPKTUL_1,0,0,b.NBRPKTLOSSUL_1/b.NBRPKTUL_1)*1000000,6) AS C12,  --VoLTE上行丢包率
+            ROUND(DECODE(b.NBRPKTDL_1,0,0,b.NBRPKTLOSSDL_1/b.NBRPKTDL_1)*1000000,6)       AS C13,  --VoLTE下行丢包率
+            ROUND(b.VOLTE_VOICE_TRAFFIC/10000,6) AS C14,  --VOLTE语音话务量(万Erl)
+            ROUND(b.UpOct/1000000000,6)  AS C15,  --流量TB
+            ROUND(DECODE(c.RSRP_COUNT,0,0,(c.RSRP_00+c.RSRP_01+c.RSRP_02+c.RSRP_03+c.RSRP_04+c.RSRP_05+c.RSRP_06)/c.RSRP_COUNT),6)  as C16   --MR覆盖率    AS C15,
+        FROM
+            REGION_CITY a,
+             TPA_EUTRANCELL_SUM b,
+             TLA_RSRP_SUM c
+             WHERE
+                 b.SCAN_START_TIME =to_date('2020-03-19 00:00:00','yyyy-mm-dd hh24:mi:ss')
+                AND c.SCAN_START_TIME =b.SCAN_START_TIME
+                AND b.SUM_LEVEL = 1
+                AND c.SUM_LEVEL = 1
+                AND b.NE_TYPE = 10003
+                AND c.NE_TYPE = 10003
+                AND a.CITY_ID = b.INT_ID
+                AND a.CITY_ID = c.INT_ID
+                AND a.REGION_ID=1821817893
+                ORDER BY a.PCODE)
+        ) f
+        where c.regionName=d.regionName and c.regionName=f.regionName
+    </select>
+    <select id="getGsmNetworkOverview" parameterType="com.boco.jlappservice.entity.request.NetworkOverviewRequest"
+            resultType="com.boco.jlappservice.entity.response.NetworkOverviewResponse">
+        select c.regionName regionName,
+        c.siteNbr siteNbr,
+        d.cellNbr cellNbr,
+        f.C2 gsmVoiceCallVolume,
+        f.C3 gsmDataFlow,
+        f.C4 gsmWirelessUtilization,
+        f.C5 wirelessConnectivity,
+        f.C6 gsmTchCongestionRate,
+        f.C7 gsmCallDropRate
+         from (select  b.region_name regionName, COUNT(b.region_name) siteNbr
+        FROM  tcc_BTS a,region_city b
+        WHERE a.SCAN_START_TIME =to_date('2020-03-19 00:00:00','yyyy-mm-dd hh24:mi:ss')
+        AND a.city_id=b.city_id GROUP BY b.region_name,b.PCODE ORDER BY b.PCODE) c,
+        (SELECT  b.region_name regionName, COUNT(*) cellNbr
+        FROM tcc_cell a,region_city b
+        WHERE a.SCAN_START_TIME =to_date('2020-03-19 00:00:00','yyyy-mm-dd hh24:mi:ss')
+        AND a.city_id=b.city_id GROUP BY  b.region_name,b.PCODE ORDER BY b.PCODE) d,
+            (SELECT
+            '吉林省'  regionName,
+            ROUND((b.TCH_TRAFFIC_FULL+b.TCH_TRAFFIC_HALF)/10000,6) AS C2,--话务量(万Erl)
+           ROUND((NVL(d.UL_MCS1,0)+NVL(d.UL_MCS2,0)+NVL    (d.UL_MCS3,0)+NVL(d.UL_MCS4,0)+NVL    (d.UL_MCS5,0)+NVL(d.UL_MCS6,0)+NVL    (d.UL_MCS7,0)+NVL(d.UL_MCS8,0)+NVL    (d.UL_MCS9,0)
+            +NVL(e.UL_RLC_THRPUT_CS1,0)+NVL    (e.UL_RLC_THRPUT_CS2,0)+NVL(e.UL_RLC_THRPUT_CS3,0)+NVL   (e.UL_RLC_THRPUT_CS4,0)
+            +NVL(d.DL_MCS1,0)+NVL(d.DL_MCS2,0)+NVL    (d.DL_MCS3,0)+NVL(d.DL_MCS4,0)+NVL    (d.DL_MCS5,0)+NVL(d.DL_MCS6,0)+NVL    (d.DL_MCS7,0)+NVL(d.DL_MCS8,0)+NVL    (d.DL_MCS9,0)
+           +NVL(e.DL_RLC_THRPUT_CS1,0)+NVL    (e.DL_RLC_THRPUT_CS2,0)+NVL(e.DL_RLC_THRPUT_CS3,0)+NVL    (e.DL_RLC_THRPUT_CS4,0))/8/1024/1024,6) AS C3,  --数据流量(TB)
+           ROUND(c.WIRELESS_UTILIZING_RATE,6)                          AS C4,  --无线利用率
+            ROUND(DECODE(b.ATT_SDCCH_SEIZ,0,0,b.SDCCH_SEIZ/    b.ATT_SDCCH_SEIZ)*DECODE(b.TCH_CALL_REQ_NHO,0,0,    b.TCH_SEIZE_NHO/b.TCH_CALL_REQ_NHO),6) AS C5,  --无线接通率
+         ROUND(DECODE(b.TCH_CALL_REQ_NHO,0,0,b.ATT_TCH_OVRFL_NHO/    b.TCH_CALL_REQ_NHO),6) AS C6, --TCH拥塞率(不含切)
+            ROUND(DECODE(b.TCH_SEIZE,0,0,b.TCH_DROP_CALL/    b.TCH_SEIZE),6) AS C7  --掉话率
+        FROM REGION_CITY a,
+             TPA_STS_CELL_SUM b,
+             TPA_PM_SUBJECT_GSM c,
+             TPA_STS_CELL_EGPRS_SUM d,
+             TPA_STS_CELL_GPRS_SUM e
+         WHERE
+         b.SCAN_START_TIME =to_date('2020-03-19 00:00:00','yyyy-mm-dd hh24:mi:ss')
+        AND c.SCAN_START_TIME =b.SCAN_START_TIME
+        AND d.SCAN_START_TIME =b.SCAN_START_TIME
+        AND e.SCAN_START_TIME =b.SCAN_START_TIME
+        AND b.SUM_LEVEL = 1
+        AND c.SUM_LEVEL = 1
+        AND d.SUM_LEVEL = 1
+        AND e.SUM_LEVEL = 1
+        AND b.NE_TYPE = 10000
+        AND c.NE_TYPE = 10000
+        AND d.NE_TYPE = 10000
+        AND e.NE_TYPE = 10000
+        AND a.city_id=1821817893
+        AND a.CITY_ID = b.INT_ID
+        AND a.CITY_ID = c.INT_ID
+        AND a.CITY_ID = d.INT_ID
+        AND a.CITY_ID = e.INT_ID
+        union all
+        select * from (
+        SELECT
+            a.CITY_NAME    regionName,
+            ROUND((b.TCH_TRAFFIC_FULL+b.TCH_TRAFFIC_HALF)/10000,6) AS C2,  --话务量(万Erl)
+          ROUND((NVL(d.UL_MCS1,0)+NVL(d.UL_MCS2,0)+NVL    (d.UL_MCS3,0)+NVL(d.UL_MCS4,0)+NVL    (d.UL_MCS5,0)+NVL(d.UL_MCS6,0)+NVL    (d.UL_MCS7,0)+NVL(d.UL_MCS8,0)+NVL    (d.UL_MCS9,0)
+            +NVL(e.UL_RLC_THRPUT_CS1,0)+NVL    (e.UL_RLC_THRPUT_CS2,0)+NVL(e.UL_RLC_THRPUT_CS3,0)+NVL   (e.UL_RLC_THRPUT_CS4,0)
+            +NVL(d.DL_MCS1,0)+NVL(d.DL_MCS2,0)+NVL    (d.DL_MCS3,0)+NVL(d.DL_MCS4,0)+NVL    (d.DL_MCS5,0)+NVL(d.DL_MCS6,0)+NVL    (d.DL_MCS7,0)+NVL(d.DL_MCS8,0)+NVL    (d.DL_MCS9,0)
+           +NVL(e.DL_RLC_THRPUT_CS1,0)+NVL    (e.DL_RLC_THRPUT_CS2,0)+NVL(e.DL_RLC_THRPUT_CS3,0)+NVL    (e.DL_RLC_THRPUT_CS4,0))/8/1024/1024,6) AS C3,  --数据流量(TB)
+            ROUND(c.WIRELESS_UTILIZING_RATE,6)                          AS C4,  --无线利用率
+            ROUND(DECODE(b.ATT_SDCCH_SEIZ,0,0,b.SDCCH_SEIZ/    b.ATT_SDCCH_SEIZ)*DECODE(b.TCH_CALL_REQ_NHO,0,0,    b.TCH_SEIZE_NHO/b.TCH_CALL_REQ_NHO),6) AS C5,  --无线接通率
+            ROUND(DECODE(b.TCH_CALL_REQ_NHO,0,0,b.ATT_TCH_OVRFL_NHO/    b.TCH_CALL_REQ_NHO),6) AS C6, --TCH拥塞率(不含切)
+            ROUND(DECODE(b.TCH_SEIZE,0,0,b.TCH_DROP_CALL/    b.TCH_SEIZE),6) AS C7   --掉话率
+        FROM
+            REGION_CITY a,
+             TPA_STS_CELL_SUM b,
+             TPA_PM_SUBJECT_GSM c,
+             TPA_STS_CELL_EGPRS_SUM d,
+             TPA_STS_CELL_GPRS_SUM e
+        WHERE
+         b.SCAN_START_TIME =to_date('2020-03-19 00:00:00','yyyy-mm-dd hh24:mi:ss')
+        AND c.SCAN_START_TIME =b.SCAN_START_TIME
+        AND d.SCAN_START_TIME =b.SCAN_START_TIME
+        AND e.SCAN_START_TIME =b.SCAN_START_TIME
+        AND b.SUM_LEVEL = 1
+        AND c.SUM_LEVEL = 1
+        AND d.SUM_LEVEL = 1
+        AND e.SUM_LEVEL = 1
+        AND b.NE_TYPE = 10003
+        AND c.NE_TYPE = 10003
+        AND d.NE_TYPE = 10003
+        AND e.NE_TYPE = 10003
+        AND a.CITY_ID = b.INT_ID
+        AND a.CITY_ID = c.INT_ID
+        AND a.CITY_ID = d.INT_ID
+        AND a.CITY_ID = e.INT_ID
+        AND a.REGION_ID=1821817893
+        ORDER BY a.PCODE)
+        ) f where c.regionName=d.regionName and c.regionName=f.regionName
+
+    </select>
+</mapper>

@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.boco.jlappservice.mapper.CellAnalysisMapper">
+    <select id="GetRnopMnoParameters" resultType="com.boco.jlappservice.entity.domainModel.RnopMnoParameter"
+            parameterType="HashMap">
+		select id,tableName,filedName,zhname,isrelatedotherkpi,
+		nvl(relatedkpitype,'Cell') neGranularity,ispercent,fieldissql
+		from rnop_mno_parameter
+		where
+		parametertype= '${parameterType}'
+		and netechnology='${ne}' and netype='${netype}'
+		and isenable = '1'
+	</select>
+    <select id="GetAnalysisParameter" parameterType="HashMap"
+            resultType="HashMap">
+    select ${fieldName} from ${tableName}
+    </select>
+    <select id="GetRelatedCount" parameterType="java.util.Map"
+            resultType="int">
+		select count(*)
+		from ENODEB a,EUTRANCELL b where a.ENODEB_ID
+		= '${enodebId}' and a.INT_ID
+		= b.RELATED_ENODEB
+	</select>
+    <select id="GetCellPerformanceMaxScanStartTime" parameterType="HashMap"
+            resultType="string">
+        select to_char(max(scan_start_time),'yyyy-mm-dd hh24:mi:ss')
+        scanstarttime
+        from
+        <if test="ne==1 and netype>=10000"> tpa_sts_cell_sum </if>
+        <if test="ne==8 and netype>=10000"> tpa_eutrancell_sum </if>
+        <if test="ne==1 and netype&lt;10000"> tpa_sts_cell_oth_ne </if>
+        <if test="ne==8 and netype&lt;10000"> tpa_eutrancell_oth_ne </if>
+        where sum_level=${sumLevel} and ne_type=${netype}
+    </select>
+    <!-- 获取性能指标 -->
+    <select id="GetCellPerformances" parameterType="HashMap"
+            resultType="com.boco.jlappservice.entity.domainModel.TempPerformanceEntity">
+		select
+		EffectiveConnMax rrcNum,
+		round(sfb_divfloat_1(a.PuschPrbAssn, a.PuschPrbTot)*100, 2)upPrb,
+		round(sfb_divfloat_1(a.PdschPrbAssn, a.PdschPrbTot)*100, 2)downPrb,
+		round((case
+		when a.vendor_id in (8,
+		9) then
+		DECODE(VOLTE_VOICE_TRAFFIC,
+		0,
+		0,
+		VOLTE_VOICE_TRAFFIC)
+		else
+		DECODE(VOLTE_VOICE_TRAFFIC_BOCO,
+		0,
+		0,
+		VOLTE_VOICE_TRAFFIC_BOCO)
+		end)*100,2) volteNum,
+		round(sfb_divfloat_1(NbrPktLossUl_1, NbrPktUl_1) * 100,2) volteLose,
+		round(sfb_divfloat_1(nvl(AttOutGeran, 0), nvl(NbrSuccEstab_1, 0))*
+		100,2) esrvcc
+		from tcc_eutrancell e,
+		tpa_eutrancell_oth_ne a,
+		region_city r
+		where e.int_id =
+		a.int_id
+		and a.int_id = '${cellId}'
+		and e.city_id = r.city_id
+		and a.sum_level = ${sumLevel}
+		and a.ne_type = ${neType}
+		and a.scan_start_time = ${scanTime}
+		and e.scan_start_time = ${scanTime}
+	</select>
+    <select id="getMrCover" parameterType="HashMap"
+            resultType="Double">
+		 select
+        decode(RSRP_count,0,0,null,0,
+        round((1 - ((RSRP_07 + RSRP_06 + RSRP_05 + RSRP_04 + RSRP_03 +
+             RSRP_02 + RSRP_01 + RSRP_00) / RSRP_count)) * 100,
+             2)) from
+             tcc_eutrancell        e,tla_rsrp_eutr  b
+             where
+                e.int_id = b.int_id
+               and e.int_id='${cellId}'
+                and b.sum_level = ${sumLevel}
+           and b.ne_type = ${neType}
+           and b.scan_start_time = ${scanTime}
+           and e.scan_start_time = ${scanTime}
+	</select>
+    <select id="GetParaVendor" parameterType="HashMap" resultType="Long">
+        select vendor_id
+        from
+        <if test="ne==1"> cell </if>
+        <if test="ne==8"> eutrancell </if>
+        where int_id=${idNo}
+    </select>
+
+    <select id="GetAdjacentCell" parameterType="HashMap" resultType="com.boco.jlappservice.entity.domainModel.GeoCell">
+        <if test="ne==1">
+            SELECT
+            a.int_id Id,
+            a.zh_name NAME,
+            a.cgi Cgi,
+            b.longitude
+            Longitude,
+            b.latitude Latitude,
+            b.longitude baiduLongitude,
+            b.latitude
+            baiduLatitude,
+            'GSM' mnetechnology,'Cell' mnetype,
+            a.lac lac,
+            a.ci ci,
+            nvl(b.dir, 0) Dir,
+            nvl(a.sys_type,2) systype,
+            (case when
+            b.indoor_support ='否'
+            then 0
+            when b.indoor_support ='是' then 1 else
+            0 end)
+            indoorsupport
+            FROM
+            cell a
+            INNER JOIN tco_pro_cell b ON
+            a.int_id = b.int_id
+            WHERE
+            a.int_id = ${idNo}
+            UNION ALL
+            SELECT
+            a.n_int_id Id,
+            a.n_cell_name NAME,
+            b.cgi Cgi,
+            b.longitude Longitude,
+            b.latitude
+            Latitude,
+            b.longitude
+            baiduLongitude,
+            b.latitude
+            baiduLatitude,
+            'GSM'
+            mnetechnology,'Cell'
+            mnetype,
+            a.n_cell_lac lac,
+            a.n_cell_ci ci,
+            nvl(b.dir, 0) Dir,
+            nvl(c.sys_type,2) systype,
+            (case when
+            b.indoor_support ='否'
+            then 0
+            when
+            b.indoor_support ='是' then 1 else
+            0 end)
+            indoorsupport
+            FROM
+            adjacent a
+            INNER JOIN tco_pro_cell b ON
+            b.int_id = a.n_int_id
+            INNER
+            JOIN cell c on b.int_id =c.int_id
+            WHERE
+            a.m_int_id = ${idNo}
+        </if>
+        <if test="ne==8">
+            SELECT
+            a.int_id Id,
+            a.zh_name NAME,
+            a.cgi Cgi,
+            b.longitude Longitude,
+            b.latitude Latitude,
+            b.longitude baiduLongitude,
+            b.latitude baiduLatitude,
+            'LTE' mnetechnology,'Eutrancell' mnetype,
+            a.tac lac,
+            a.celllocalid ci,
+            nvl(b.bearing, 0) Dir,
+            nvl(b.cover_type,0) indoorsupport,
+            999 systype
+            FROM
+            eutrancell a
+            INNER JOIN tco_pro_eutrancell b ON a.int_id = b.int_id
+            WHERE
+            a.int_id = ${idNo}
+            <if test="adjacents!=null ">
+                union all
+                <foreach collection="adjacents" item="ne" index="index"
+                         separator="union all">
+                    <if test="ne==1">
+                        SELECT
+                        a.n_int_id Id,
+                        c.zh_name NAME,
+                        b.cgi Cgi,
+                        b.longitude Longitude,
+                        b.latitude
+                        Latitude,
+                        b.longitude
+                        baiduLongitude,
+                        b.latitude
+                        baiduLatitude,
+                        'GSM'
+                        mnetechnology,'Cell'
+                        mnetype,
+                        c.lac lac,
+                        c.ci ci,
+                        nvl(b.dir, 0) Dir,
+                        (case when
+                        b.indoor_support ='是' then '1' else
+                        '0' end)
+                        indoorsupport,
+                        nvl(c.sys_type,2) systype
+                        FROM
+                        gsmrelationtdd a
+                        INNER JOIN tco_pro_cell b ON
+                        b.int_id = a.n_int_id
+                        INNER
+                        JOIN cell c on b.int_id =c.int_id
+                        WHERE
+                        a.m_int_id = ${idNo}
+                    </if>
+                    <if test="ne==8">
+                        SELECT
+                        a.n_int_id Id,
+                        a.n_name NAME,
+                        c.cgi Cgi,
+                        b.longitude Longitude,
+                        b.latitude Latitude,
+                        b.longitude baiduLongitude,
+                        b.latitude
+                        baiduLatitude,
+                        'LTE' mnetechnology,'Eutrancell' mnetype,
+                        c.tac lac,
+                        c.celllocalid ci,
+                        nvl(b.bearing, 0) Dir,
+                        nvl(b.cover_type,0)
+                        indoorsupport,
+                        999 systype
+                        FROM
+                        eutranrelationTDD a
+                        INNER JOIN tco_pro_eutrancell b ON b.int_id = a.n_int_id
+                        INNER JOIN eutrancell c on b.int_id=c.int_id
+                        WHERE
+                        a.m_int_id =${idNo}
+                    </if>
+                </foreach>
+
+            </if>
+        </if>
+    </select>
+
+    <!-- 取告警信息 -->
+    <select id="GetCellAlarm" parameterType="HashMap" resultType="com.boco.jlappservice.entity.domainModel.CellAlarm">
+        <if test="neTechnology == 1">
+            select to_char(a.int_id) id, a.alarm_title_text
+            alarmtitle,a.event_time
+            alarmtime,
+            a.probable_cause alarmContent from
+            tfa_alarm a left join cell c
+            on a.int_id = c.related_bts where
+            a.event_time >=
+            to_date('${scanStartTime}','YYYY-MM-DD hh24:mi:ss')
+            and a.object_class = 300 and a.int_id= ${idNo} order by event_time desc
+        </if>
+        <if test="neTechnology == 8 ">
+            select to_char(a.int_id), a.alarm_title_text
+            alarmtitle,a.event_time
+            alarmtime,
+            a.probable_cause alarmContent from
+            tfa_alarm a left join eutrancell c
+            on a.int_id = c.related_enodeb
+            where a.event_time >=
+            to_date('${scanStartTime}','YYYY-MM-DD
+            hh24:mi:ss')
+            and a.object_class = 8105 and a.int_id= ${idNo} order by
+            event_time desc
+        </if>
+    </select>
+    <select id="GetCellByName" parameterType="HashMap"
+            resultType="com.boco.jlappservice.entity.domainModel.Cell">
+        select * from (
+        select t.int_id Id,t.zh_name Name,r.region_id,
+        c.baidulongitude,c.baidulatitude,
+        <if test="ne==1"> (case when
+            t1.indoor_support ='否' then 0
+            when
+            t1.indoor_support ='是' then 1 else
+            0 end)
+            indoorsupport, t1.dir,
+        </if>
+        <if test="ne==8"> nvl(t1.cover_type,0) indoorsupport,t1.bearing dir,</if>
+
+        <if test="ne==1"> t.ci,'GSM' NETechnology,'Cell' NeType </if>
+        <if test="ne==8"> t.cellLocalid ci,'LTE' NETechnology,'Eutrancell' NeType
+        </if>
+        from
+        <if test="ne==1"> tcc_cell t , tco_pro_cell t1,geocell
+            c,region_city r
+        </if>
+        <if test="ne==8"> tcc_eutrancell t , tco_pro_eutrancell t1,geocell
+            c,region_city r
+        </if>
+        where 1 = 1
+        <if test="ne==1">and c.netechnology = 'GSM'</if>
+        <if test="ne==8">and c.netechnology = 'LTE'</if>
+        and (t.zh_name like '%${cellName}%' or t1.zh_name like '%${cellName}%'
+        or
+        to_char(t.cgi) like '%${cellName}%'
+        )
+        and t.city_id = r.city_id
+        and
+        t.int_id = c.id
+        and t.int_id=t1.int_id
+        and t.scan_start_time =
+        to_date('${scan_start_time}','yyyy-MM-dd
+        hh24:mi:ss')
+        ) where rownum
+        &lt;= 10
+
+    </select>
+    <!-- 通过cgi获取小区编号 -->
+    <select id="GetResourceIdByCgi" parameterType="HashMap"
+            resultType="com.boco.jlappservice.entity.domainModel.AppGeoCell">
+            select id id,baidulongitude,baidulatitude,dir, IndoorSupport,netechnology,netype,
+            case
+            when netechnology = 'GSM' then 0
+            when netechnology = 'LTE' then 3
+            else -1
+            end  ColorId
+        from geocell where  cgi='${cgi}'
+	</select>
+    <select id="GetCellAnalysis" parameterType="com.boco.jlappservice.entity.request.CellAnalysisRequest"
+    resultType="com.boco.jlappservice.entity.response.CellAnalysisResponse">
+        <bind name="cellName" value="'%' + cellName +'%'" />
+        select name cellName, BAIDULONGITUDE baiduLongitude,
+        baiduLatitude baiduLatitude  from geocell where netechnology=#{networkType} and name like #{cellName}
+    </select>
+</mapper>

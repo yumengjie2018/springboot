@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.boco.jlappservice.mapper.YnGisMapper">
+
+    <select id="GetCellsList" parameterType="HashMap"
+            resultType="com.boco.jlappservice.entity.domainModel.GisCellsList" flushCache="false">
+        <if test="technology==8">
+            select a.int_id intId,
+            a.zh_name zhName,
+            b.baidulongitude,
+            b.baidulatitude,
+            b.dir,
+            b.indoorsupport,
+            b.netechnology
+            from tcc_eutrancell a,geocell b
+            where a.scan_start_time
+            =to_date('${scan_start_time}','yyyy-MM-dd hh24:mi:ss')
+            and b.id =
+            a.int_id
+            and b.NETECHNOLOGY = 'LTE'
+            and a.related_enodeb in(
+            select b.int_id
+            from tcc_eutrancell a, tcc_enodeb
+            b
+            where b.scan_start_time = a.scan_start_time
+            and b.int_id =
+            a.related_enodeb
+            and a.int_id = ${intId}
+            and a.scan_start_time
+            =to_date('${scan_start_time}','yyyy-MM-dd hh24:mi:ss')
+            and
+            b.scan_start_time =to_date('${scan_start_time}','yyyy-MM-dd
+            hh24:mi:ss'))
+        </if>
+        <if test="technology==1">
+            select a.int_id intId,
+            a.name zhName,
+            b.baidulongitude,
+            b.baidulatitude,
+            b.dir,
+            b.indoorsupport,
+            b.netechnology
+            from tcc_cell a,geocell b
+            where a.scan_start_time
+            =to_date('${scan_start_time}','yyyy-MM-dd hh24:mi:ss')
+            and b.id =
+            a.int_id
+            and b.NETECHNOLOGY = 'GSM'
+            and a.related_bts in(
+            select b.int_id
+            from tcc_cell a, tcc_bts b
+            where
+            a.scan_start_time = b.scan_start_time
+            and b.int_id = a.related_bts
+            and
+            a.int_id = ${intId}
+            and a.scan_start_time
+            =to_date('${scan_start_time}','yyyy-MM-dd hh24:mi:ss')
+            and
+            b.scan_start_time =to_date('${scan_start_time}','yyyy-MM-dd
+            hh24:mi:ss'))
+        </if>
+    </select>
+
+    <select id="GetGeoCellByLonLat" parameterType="HashMap"
+            resultType="com.boco.jlappservice.entity.domainModel.AppGeoCell">
+        <foreach collection="neNames" item="ne" index="index" separator="union all">
+            select id id,baidulongitude,baidulatitude,dir, IndoorSupport,netechnology,
+            case
+            when netechnology = 'GSM' then 0
+            when netechnology = 'LTE' then 3
+            else -1
+            end  ColorId
+            from geocell
+            where (baidulongitude >= ${minLon} and baidulongitude &lt;= ${maxLon})
+            and	(baidulatitude >= ${minLat} and baidulatitude &lt;= ${maxLat})
+            and netechnology = '${ne}'
+        </foreach>
+    </select>
+    <!-- gis模块取邻区资源信息  -->
+    <select id="GetAdjacentResources"
+            parameterType="HashMap" resultType="com.boco.jlappservice.entity.domainModel.AppGeoCell">
+        <if test="ne==1">
+            SELECT id id,baidulongitude,baidulatitude,dir, IndoorSupport,
+            case when systype = '1' then  'GSM900' when systype = '2' then 'GSM1800' else netechnology end netechnology
+            FROM geocell
+            WHERE id = ${idNo}
+            UNION ALL
+            SELECT b.id id,baidulongitude,baidulatitude,dir, IndoorSupport,
+            case when systype = '1' then  'GSM900' when systype = '2' then 'GSM1800' else netechnology end netechnology
+            FROM adjacent a INNER JOIN geocell b ON b.id = a.n_int_id
+            WHERE a.m_int_id = ${idNo}
+        </if>
+        <if test="ne==8">
+            select id id,baidulongitude,baidulatitude,dir, IndoorSupport,
+             'LTETDD' netechnology
+            FROM geocell a
+            WHERE a.id = ${idNo}
+            <if test="adjacents!=null ">
+                union all
+                <foreach collection="adjacents" item="ne" index="index"
+                         separator="union all">
+                    <if test="ne==1">
+                        SELECT b.id id,baidulongitude,baidulatitude,dir, IndoorSupport,
+                        case when systype = '1' then  'GSM900' when systype = '2' then 'GSM1800' else netechnology end netechnology
+                        FROM
+                        gsmrelationtdd a
+                        INNER JOIN geocell b ON b.id = a.n_int_id
+                        WHERE a.m_int_id = ${idNo}
+                    </if>
+                    <if test="ne==8">
+                        SELECT b.id id,baidulongitude,baidulatitude,dir, IndoorSupport,
+                         'LTETDD'  netechnology
+                        FROM eutranrelationTDD a
+                        INNER JOIN geocell b ON b.id = a.n_int_id
+                        WHERE a.m_int_id = ${idNo}
+                    </if>
+                </foreach>
+            </if>
+        </if>
+    </select>
+</mapper>
